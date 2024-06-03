@@ -4,7 +4,9 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 //
 import authRoute from './routes/auth.js'
-
+import { checkAuth } from './utils/checkAuth.js';
+import { createArt, getAllArt, getOneArt, removeArt, updateArt } from './controllers/ArtControllers.js';
+import { artCreateValidation } from './validation/art.js'
 const app = express();
 dotenv.config()
 const PORT = process.env.PORT || 5001
@@ -24,7 +26,13 @@ app.get('/', (req, res) => {
 })
 
 app.use('/api/auth', authRoute)
-// app.use('/api/art', artRoute)
+
+app.get('/api/arts', getAllArt)
+app.get('/api/arts/:id', getOneArt)
+app.post('/api/arts', checkAuth, createArt)
+app.delete('/api/arts/:id', checkAuth, artCreateValidation, removeArt)
+app.patch('/api/arts/:id', checkAuth, artCreateValidation, updateArt)
+
 
 
 async function start() {
