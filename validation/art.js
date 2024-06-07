@@ -5,4 +5,5 @@ export const artCreateValidation = [
   body('text').optional().isLength({ min: 5 }).isString(),
   // body('tags').optional().isArray(),
   body('imageUrl').optional().isURL(),
+  body('room').optional().isString(),
 ]  

@@ -4,9 +4,33 @@ const ArtSchema = new mongoose.Schema(
   {
     title: { type: String, required: false },
     text: { type: String, required: false, },
-    // tags: {type: Array, default: []}
+    // tags: {type: Array, default: []},
     viewsCount: { type: Number, default: 0 },
-    // imageUrl: { type: String, required: true },
+    room: { type: String, default: 'general' },
+    likes: {
+      count: { type: Number, default: 0 },
+      users: [
+        {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'User',
+          index: true
+        }
+      ]
+    },
+    comments: {
+      count: { type: Number, default: 0 },
+      commentList: [
+        {
+          userId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+            required: true
+          },
+          comment: { type: String, required: true }
+        }
+      ]
+    },
+    imageUrl: { type: String },
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
@@ -18,3 +42,4 @@ const ArtSchema = new mongoose.Schema(
 // imageUrl: { type: String, required: true },
 
 export default mongoose.model('Art', ArtSchema)
+
