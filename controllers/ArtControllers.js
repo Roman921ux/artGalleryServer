@@ -23,16 +23,83 @@ export const updateFollowerUser = async (req, res) => {
       followerId,
       { $addToSet: { 'followers.users': userId }, $inc: { 'followers.count': 1 } },
       { new: true }
-    ).populate('followers.users');
+    ).populate([
+      { path: 'followers.users' },
+      { path: 'arts.items' }
+    ]).populate('subscriptions.users');
+
+    // .populate({
+    //   path: 'followers.users',
+    //   populate: {
+    //     path: 'arts.items',
+    //   }
+    // });
     // если не нашли то можем подписываться*
     const updatedDocSubscriptions = await UserModel.findByIdAndUpdate(
       userId,
       { $addToSet: { 'subscriptions.users': followerId }, $inc: { 'subscriptions.count': 1 } },
       { new: true }
-    ).populate('subscriptions.users');
+    ).populate({
+      path: 'subscriptions.users',
+      populate: {
+        path: 'arts.items',
+      }
+    });
     // добавляем себе человека в подписки
 
-    res.json({ updatedDocFollow, updatedDocSubscriptions });
+    res.json(updatedDocFollow);
+  } catch (error) {
+    console.error('Ошибка при обновлении подписчика:', error);
+    res.status(500).json({
+      message: 'Не удалось обновить подписчика'
+    });
+  }
+}
+export const updateUnsubUser = async (req, res) => {
+  try {
+    const followerId = req.params.id;
+    // id пользователя от которого мы хотим отписаться
+    const userId = req.userId;
+
+    const doc = await UserModel.findById(followerId);
+    // нашли пользователя, на которого хотим подписаться
+    if (!doc) {
+      return res.status(404).json({ message: 'Пользователь не найден' });
+    }
+    if (!doc.followers.users.includes(userId)) {
+      return res.status(400).json({ message: 'Вы еще не подписаны на этого пользователя' });
+      // заходим в массив подписчиков и пытаемся найти нас, тех кто делает запрос
+    }
+
+    const updatedDocFollow = await UserModel.findByIdAndUpdate(
+      followerId,
+      { $pull: { 'followers.users': userId }, $inc: { 'followers.count': -1 } },
+      { new: true }
+    ).populate([
+      { path: 'followers.users' },
+      { path: 'arts.items' }
+    ]).populate('subscriptions.users');
+    // .populate({
+    //   path: 'followers.users',
+    //   populate: {
+    //     path: 'arts.items',
+    //   }
+    // });
+    // .populate('followers.users');
+    // если не нашли то можем подписываться*
+    const updatedDocSubscriptions = await UserModel.findByIdAndUpdate(
+      userId,
+      { $pull: { 'subscriptions.users': followerId }, $inc: { 'subscriptions.count': -1 } },
+      { new: true }
+    ).populate({
+      path: 'subscriptions.users',
+      populate: {
+        path: 'arts.items',
+      }
+    });
+    // убираем у себе из подписок человека
+
+    res.json(updatedDocFollow);
   } catch (error) {
     console.error('Ошибка при обновлении подписчика:', error);
     res.status(500).json({
@@ -43,7 +110,10 @@ export const updateFollowerUser = async (req, res) => {
 export const getUser = async (req, res) => {
   try {
     const userId = req.params.id;
-    const doc = await UserModel.findById(userId);
+    const doc = await UserModel.findById(userId).populate([
+      { path: 'followers.users' },
+      { path: 'arts.items' }
+    ]).populate('subscriptions.users');
     if (!doc) {
       return res.status(404).json({ message: 'Пользователь не найден' });
     }
@@ -74,9 +144,13 @@ export const createRoom = async (req, res) => {
 }
 export const getAllRoom = async (req, res) => {
   try {
-
+    const rooms = await SortModel.find();
+    res.json(rooms);
   } catch (error) {
-
+    res.status(500).json({
+      message: 'Не удалось получить комнаты',
+      error
+    })
   }
 }
 // Art
@@ -157,6 +231,7 @@ export const updateArt = async (req, res) => {
         text: req.body.text,
         user: req.userId
       });
+
       res.json({
         success: true,
         doc
@@ -209,7 +284,7 @@ export const getOneArt = async (req, res) => {
       { _id: artId },
       { $inc: { viewsCount: 1 } },
       { returnDocument: 'after' }
-    )
+    ).populate('user');
     // .populate('user').exec();
     if (!doc) {
       return res.status(404).json({
@@ -226,7 +301,7 @@ export const getOneArt = async (req, res) => {
 }
 export const getAllArt = async (req, res) => {
   try {
-    const arts = await ArtModel.find().populate('user').exec();
+    const arts = await ArtModel.find().populate('user');
 
     res.json(arts);
   } catch (error) {
@@ -237,6 +312,8 @@ export const getAllArt = async (req, res) => {
 }
 export const createArt = async (req, res) => {
   try {
+    const userId = req.userId;
+
     const doc = new ArtModel({
       title: req.body.title,
       text: req.body.text,
@@ -245,8 +322,11 @@ export const createArt = async (req, res) => {
       imageUrl: req.body.image,
     });
 
-
     const art = await doc.save();
+    const userDoc = await UserModel.findByIdAndUpdate(
+      userId,
+      { $push: { 'arts.items': art }, $inc: { 'arts.count': 1 } }
+    )
     res.json(art);
   } catch (error) {
     res.status(500).json({

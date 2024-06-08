@@ -6,7 +6,7 @@ import multer from 'multer'
 //
 import authRoute from './routes/auth.js'
 import { checkAuth } from './utils/checkAuth.js';
-import { createArt, createRoom, getAllArt, getAllRoom, getOneArt, getUser, removeArt, updateArt, updateArtComment, updateArtLike, updateFollowerUser } from './controllers/ArtControllers.js';
+import { createArt, createRoom, getAllArt, getAllRoom, getOneArt, getUser, removeArt, updateArt, updateArtComment, updateArtLike, updateFollowerUser, updateUnsubUser } from './controllers/ArtControllers.js';
 import { artCreateValidation } from './validation/art.js'
 //
 
@@ -48,10 +48,11 @@ app.delete('/api/arts/:id', checkAuth, artCreateValidation, removeArt)
 app.patch('/api/arts/:id', checkAuth, artCreateValidation, updateArt) // +/edit
 // user
 app.patch('/api/follower/:id', checkAuth, updateFollowerUser)
+app.patch('/api/unsub/:id', checkAuth, updateUnsubUser)
 app.get('/api/user/:id', getUser)
 // sortRoom
 app.post('/api/sort', checkAuth, createRoom)
-app.get('/api/sort', checkAuth, getAllRoom)
+app.get('/api/sort', getAllRoom)
 // imgFile
 app.post('/api/upload', checkAuth, upload.single('image'), (req, res) => {
   res.json({

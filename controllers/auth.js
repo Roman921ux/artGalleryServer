@@ -41,7 +41,7 @@ export const register = async (req, res) => {
 
 export const login = async (req, res) => {
   try {
-    const isUser = await User.findOne({ email: req.body.email })
+    const isUser = await User.findOne({ email: req.body.email }).populate('followers.users').populate('subscriptions.users');
     if (!isUser) {
       return res.status(400).json({
         message: 'Такого пользователя не существует'
@@ -76,7 +76,10 @@ export const login = async (req, res) => {
 
 export const getMe = async (req, res) => {
   try {
-    const user = await User.findById(req.userId);
+    const user = await User.findById(req.userId).populate({
+      path: 'arts.items',
+      populate: { path: 'user' } // здесь 'user' - это название поля в схеме ArtSchema
+    }).populate('followers.users').populate('subscriptions.users');
     if (!user) {
       return res.status(500).json({
         message: 'Не удалось найти пользователя'

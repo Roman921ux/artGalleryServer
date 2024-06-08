@@ -26,23 +26,23 @@ const UserSchema = new mongoose.Schema(
         }
       ],
     },
-    arts: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Arts',
-        index: true
-      },
-    ],
-    // arts: {
-    //   count: {type: Number, default: 0},
-    //   items: [
-    //     {
-    //       type: mongoose.Schema.Types.ObjectId,
-    //       ref: 'Arts',
-    //       index: true 
-    //     },
-    //   ],
-    // }
+    // arts: [
+    //   {
+    //     type: mongoose.Schema.Types.ObjectId,
+    //     ref: 'Art',
+    //     index: true
+    //   },
+    // ],
+    arts: {
+      count: { type: Number, default: 0 },
+      items: [
+        {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'Art',
+          index: true
+        },
+      ],
+    }
   },
   { timestamps: true },
 )
