@@ -41,7 +41,8 @@ export const register = async (req, res) => {
 
 export const login = async (req, res) => {
   try {
-    const isUser = await User.findOne({ email: req.body.email }).populate('followers.users').populate('subscriptions.users');
+    const isUser = await User.findOne({ email: req.body.email })
+      .populate('followers.users').populate('subscriptions.users');
     if (!isUser) {
       return res.status(400).json({
         message: 'Такого пользователя не существует'
