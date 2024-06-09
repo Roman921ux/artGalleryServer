@@ -179,7 +179,7 @@ export const updateArtLike = async (req, res) => {
       artId,
       { $addToSet: { 'likes.users': userId }, $inc: { 'likes.count': 1 } },
       { new: true }
-    ).populate('user');
+    ).populate('user').populate('likes.users');
     // если он не нашел нас то мы ставим лайк
 
     res.json(doc)
@@ -204,7 +204,8 @@ export const updateArtComment = async (req, res) => {
       artId,
       { $push: { 'comments.commentList': commentObj }, $inc: { 'comments.count': 1 } },
       { new: true }
-    ).populate('comments.commentList.userId');
+    ).populate('comments.commentList.userId').populate('likes.users').populate('user');
+
     if (!art) {
       return res.status(500).json({
         message: 'Не удалось найти работу'
@@ -284,7 +285,7 @@ export const getOneArt = async (req, res) => {
       { _id: artId },
       { $inc: { viewsCount: 1 } },
       { returnDocument: 'after' }
-    ).populate('user');
+    ).populate('user').populate('likes.users').populate('comments.commentList.userId');
     // .populate('user').exec();
     if (!doc) {
       return res.status(404).json({
@@ -301,7 +302,7 @@ export const getOneArt = async (req, res) => {
 }
 export const getAllArt = async (req, res) => {
   try {
-    const arts = await ArtModel.find().populate('user');
+    const arts = await ArtModel.find().populate('user').populate('likes.users');
 
     res.json(arts);
   } catch (error) {
@@ -313,12 +314,15 @@ export const getAllArt = async (req, res) => {
 export const createArt = async (req, res) => {
   try {
     const userId = req.userId;
+    const room = req.body.room;
+    const funilyRoom = room.replace(/-/g, ' ')
+    // console.log('funilyRoom', funilyRoom)
 
     const doc = new ArtModel({
       title: req.body.title,
       text: req.body.text,
       user: req.userId,
-      room: req.body.room,
+      room: funilyRoom,
       imageUrl: req.body.image,
     });
 
@@ -327,6 +331,15 @@ export const createArt = async (req, res) => {
       userId,
       { $push: { 'arts.items': art }, $inc: { 'arts.count': 1 } }
     )
+    // добавляем art ему в User объект
+
+    const updatedDoc = await SortModel.findOneAndUpdate(
+      { nameRoom: { $regex: new RegExp(funilyRoom, 'i') } }, // Условие поиска документа
+      { $inc: { countArts: 1 } }, // Обновление поля countArts на 1
+      { new: true } // Опция new: true вернет обновленный документ
+    );
+    // добавляем в комнату нашу работу (счетчик увеличиваем)
+
     res.json(art);
   } catch (error) {
     res.status(500).json({
